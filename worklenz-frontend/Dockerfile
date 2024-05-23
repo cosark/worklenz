@@ -22,7 +22,7 @@ RUN npm run build
 FROM nginx:alpine
 
 # Copy the build output to Nginx's html directory
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/dist/worklenz /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80

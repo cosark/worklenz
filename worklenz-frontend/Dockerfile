@@ -1,24 +1,34 @@
-FROM node:18-alpine
+# Stage 1: Build the Angular application
+FROM node:18-alpine AS builder
 
 # Install Python, make, and g++ for building native modules
 RUN apk add --no-cache python3 make g++
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy package.json and package-lock.json first to leverage Docker cache
+# Copy package.json and package-lock.json to leverage Docker cache
 COPY package*.json ./
 
-# Install dependencies globally
-RUN npm install -g @angular/cli@latest
+# Install dependencies
+RUN npm install -g @angular/cli@latest && npm install
 
-# Install project dependencies
-RUN npm install
-
-# Copy the rest of the application files
+# Copy the application source code
 COPY . .
 
-# Expose the necessary port (change according to your app if needed)
-EXPOSE 4200
+# Build the Angular application
+RUN npm run build
 
-# Start the application
-CMD ["npm", "start"]
+# Stage 2: Serve the built application with Nginx
+FROM nginx:alpine
+
+# Copy the build output to Nginx's html directory
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy custom Nginx configuration, if any
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx server
+CMD ["nginx", "-g", "daemon off;"]
